@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/*
+ * My Product Shelf's own look: a warm greige paper, soft brown ink and a sunny orange,
+ * with friendly rounded type. Templates (src/templates) have their own styles.
+ */
+@theme inline {
+  --font-sans: var(--font-inter), var(--font-bn), system-ui, sans-serif;
+  --font-display: var(--font-zen), var(--font-bn), var(--font-inter), system-ui, sans-serif;
+  --font-script: var(--font-caveat), var(--font-zen), cursive;
+
+  --color-paper: #f2eee9;
+  --color-ink: #393533;
+  --color-muted: #817d7a;
+  --color-line: #e2dbd2;
+  --color-brand: #e17738;
+  --color-brand-dark: #c9652a;
+  --color-brand-soft: #fcebdd;
+  --color-blue: #4e608f;
+  --color-teal: #61aea9;
+  --color-gold: #dabd7f;
+  --color-ok: #1f8f55;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+dialog {
+  color: inherit;
+}
+
+/* In the base layer so templates can still set their own heading fonts. */
+@layer base {
+  h1, h2, h3 {
+    font-family: var(--font-display);
+  }
+}
+
+/* Bengali needs a little more line height to stay readable. */
+:lang(bn) body {
+  line-height: 1.7;
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+.spin-slow {
+  animation: spin-slow 22s linear infinite;
+}
+/* A strip of text that slides left forever (Bistro template). The content is repeated twice. */
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+.marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin-slow, .marquee { animation: none; }
+}

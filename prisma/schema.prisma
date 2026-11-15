@@ -1,0 +1,66 @@
+// SQLite for local development. To move to Supabase (Postgres), change the
+// provider to "postgresql", point DATABASE_URL at the Supabase connection
+// string and run `prisma migrate deploy`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+  shop         Shop?
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Shop {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  slug        String    @unique
+  slugCustom  Boolean   @default(false)
+  name        String    @default("")
+  description String    @default("")
+  instagram   String    @default("")
+  facebook    String    @default("")
+  whatsapp    String    @default("")
+  messenger   String    @default("")
+  template    String    @default("elegant")
+  currency    String    @default("BDT")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products    Product[]
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  shopId    String
+  image     String   @default("")
+  width     Int      @default(0)
+  height    Int      @default(0)
+  name      String   @default("")
+  code      String   @default("")
+  price     Float?
+  category  String   @default("")
+  createdAt DateTime @default(now())
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId, createdAt])
+}
