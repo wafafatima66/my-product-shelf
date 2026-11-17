@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LocaleSwitch } from "@/components/LocaleSwitch";
 import { Logo } from "@/components/Logo";
 import ScaledFrame from "@/components/ScaledFrame";
+import WhereItFits from "@/components/home/WhereItFits";
 import { Frame, Label, PillLink, Rainbow, Script, ScrollBadge, Stamp } from "@/components/home/parts";
 import { getUser } from "@/lib/auth";
 import { formatPrice } from "@/lib/format";
@@ -602,6 +603,8 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <WhereItFits href={go} cta={h.cta} />
 
       {/* ---------- tips ---------- */}
       <section id="guides" className="scroll-mt-20 px-5 py-20">
