@@ -8,6 +8,7 @@ import { checkPassword, endSession, hashPassword, requireUser, startSession } fr
 import { getDict, LOCALE_COOKIE } from "@/lib/i18n";
 import { isCurrency } from "@/lib/format";
 import { MORE_OPTIONS } from "@/lib/limits";
+import { emailMoreRequest } from "@/lib/notify";
 import { isValidSlug, slugify, uniqueSlug } from "@/lib/slug";
 import { isTemplate } from "@/templates/registry";
 
@@ -102,16 +103,20 @@ export async function requestMoreProducts(_: FormState, fd: FormData): Promise<F
   const email = text(fd, "email", 200).toLowerCase();
   if (!/^\S+@\S+\.\S+$/.test(email)) return { error: t.dash.products.moreErr };
   const wanted = text(fd, "wanted", 40);
-  await db.productLimitRequest.create({
-    data: {
-      userId: user.id,
-      email,
-      shopName: shop.name,
-      shopSlug: shop.slug,
-      wanted: MORE_OPTIONS.includes(wanted) ? wanted : "",
-      note: text(fd, "note", 1000),
-    },
-  });
+  const request = {
+    email,
+    shopName: shop.name,
+    shopSlug: shop.slug,
+    wanted: MORE_OPTIONS.includes(wanted) ? wanted : "",
+    note: text(fd, "note", 1000),
+  };
+  await db.productLimitRequest.create({ data: { userId: user.id, ...request } });
+  // The request is already saved, so a failed email must not turn into an error for the seller.
+  try {
+    await emailMoreRequest(request);
+  } catch (e) {
+    console.error("could not email the more-products request", e);
+  }
   return { ok: true };
 }
 

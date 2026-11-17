@@ -29,7 +29,10 @@ written to `./uploads` and served from `/media/<key>`.
 2. In the Vercel project, add a **Neon** database (Storage tab) or paste `DATABASE_URL` and
    `DIRECT_URL`, and create a **Blob** store, which adds `BLOB_READ_WRITE_TOKEN`.
 3. Add `SITE_URL=https://myproductshelf.com` and `NEXT_PUBLIC_GA_ID` (Google Analytics).
-4. Add the domain under Settings, Domains, and point the Namecheap DNS records at Vercel.
+4. To get an email for each "more products" request, add `RESEND_API_KEY` (from resend.com) and
+   `REQUESTS_NOTIFY_EMAIL` (where to send it). Optional: `RESEND_FROM`, a sender on a domain you
+   verified in Resend. Without these the request is still saved in the `ProductLimitRequest` table.
+5. Add the domain under Settings, Domains, and point the Namecheap DNS records at Vercel.
 
 Photos in Blob are stored as `photos/<id>.jpg` (full size) and `photos/<id>-t.jpg` (thumbnail),
 and a product keeps the full public address.
