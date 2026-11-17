@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { checkPassword, endSession, hashPassword, requireUser, startSession } from "@/lib/auth";
 import { getDict, LOCALE_COOKIE } from "@/lib/i18n";
 import { isCurrency } from "@/lib/format";
+import { MORE_OPTIONS } from "@/lib/limits";
 import { isValidSlug, slugify, uniqueSlug } from "@/lib/slug";
 import { isTemplate } from "@/templates/registry";
 
@@ -90,6 +91,26 @@ export async function saveBusiness(_: FormState, fd: FormData): Promise<FormStat
   await db.shop.update({ where: { id: shop.id }, data: { ...data, slug, slugCustom: shop.slugCustom || slug !== shop.slug && !!wanted } });
   revalidatePath("/dashboard", "layout");
   return { ok: true, slug };
+}
+
+/** A seller who wants more than the product limit leaves their details here. */
+export async function requestMoreProducts(_: FormState, fd: FormData): Promise<FormState> {
+  const { t } = await getDict();
+  const { user, shop } = await requireUser();
+  const email = text(fd, "email", 200).toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: t.dash.products.moreErr };
+  const wanted = text(fd, "wanted", 40);
+  await db.productLimitRequest.create({
+    data: {
+      userId: user.id,
+      email,
+      shopName: shop.name,
+      shopSlug: shop.slug,
+      wanted: MORE_OPTIONS.includes(wanted) ? wanted : "",
+      note: text(fd, "note", 1000),
+    },
+  });
+  return { ok: true };
 }
 
 export async function chooseTemplate(id: string) {

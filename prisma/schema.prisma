@@ -49,6 +49,20 @@ model Shop {
   products    Product[]
 }
 
+/** A seller asking for room beyond the free product limit. Kept even if the account is deleted. */
+model ProductLimitRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  email     String
+  shopName  String   @default("")
+  shopSlug  String   @default("")
+  wanted    String   @default("")
+  note      String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model Product {
   id        String   @id @default(cuid())
   shopId    String

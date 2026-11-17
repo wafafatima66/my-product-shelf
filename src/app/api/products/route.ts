@@ -1,10 +1,14 @@
 import { db } from "@/lib/db";
+import { MAX_PRODUCTS } from "@/lib/limits";
 import { clip, MAX_UPLOAD, parsePrice, shopOrNull, toDash } from "@/lib/products";
 import { saveImage } from "@/lib/storage";
 
 export async function POST(req: Request) {
   const shop = await shopOrNull();
   if (!shop) return Response.json({ error: "unauthorized" }, { status: 401 });
+  if ((await db.product.count({ where: { shopId: shop.id } })) >= MAX_PRODUCTS) {
+    return Response.json({ error: "limit" }, { status: 403 });
+  }
 
   const fd = await req.formData();
   const file = fd.get("image");

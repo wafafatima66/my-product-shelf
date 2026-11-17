@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
+import { requestMoreProducts, type FormState } from "@/app/actions";
 import { btn, btnGhost, btnSmall, card, input, label } from "@/components/ui";
+import { MAX_PRODUCTS, MORE_OPTIONS } from "@/lib/limits";
 import { fill } from "@/lib/i18n/fill";
 import type { Dict } from "@/lib/i18n/en";
 import type { DashProduct } from "@/lib/products";
@@ -32,11 +34,13 @@ async function send(url: string, method: string, body: FormData | string, json =
   return res.json();
 }
 
-export default function ProductManager({ initial, t }: { initial: DashProduct[]; t: T }) {
+export default function ProductManager({ initial, t, email }: { initial: DashProduct[]; t: T; email: string }) {
   const [items, setItems] = useState(initial);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState("");
+  const [showMore, setShowMore] = useState(false);
+  const atLimit = items.length >= MAX_PRODUCTS;
 
   // add form
   const [photo, setPhoto] = useState<Blob | null>(null);
@@ -57,7 +61,14 @@ export default function ProductManager({ initial, t }: { initial: DashProduct[];
     setMsg(m);
     setTimeout(() => setMsg((cur) => (cur === m ? "" : cur)), 3500);
   };
-  const fail = (e: unknown) => say(e instanceof Error && e.message === "bad_image" ? t.badImage : t.failed);
+  const fail = (e: unknown) => {
+    const code = e instanceof Error ? e.message : "";
+    if (code === "limit") {
+      setShowMore(true);
+      return say(fill(t.limitReached, { max: MAX_PRODUCTS }));
+    }
+    say(code === "bad_image" ? t.badImage : t.failed);
+  };
 
   async function pickPhoto(file?: File) {
     if (!file) return;
@@ -70,6 +81,7 @@ export default function ProductManager({ initial, t }: { initial: DashProduct[];
   }
 
   async function add() {
+    if (atLimit) return fail(new Error("limit"));
     if (!photo && !f.name.trim() && !f.code.trim() && !f.price.trim() && !f.category.trim()) return say(t.needOne);
     setBusy(true);
     try {
@@ -90,8 +102,12 @@ export default function ProductManager({ initial, t }: { initial: DashProduct[];
 
   async function bulk(files: FileList | null) {
     if (!files?.length) return;
+    if (atLimit) return fail(new Error("limit"));
+    // Only as many photos as there is room for; the server enforces the same limit.
+    const room = MAX_PRODUCTS - items.length;
+    const list = [...files].slice(0, room);
+    const trimmed = files.length > room;
     setBusy(true);
-    const list = [...files];
     let bad = 0;
     for (let i = 0; i < list.length; i++) {
       setMsg(fill(t.uploading, { n: i + 1, total: list.length }));
@@ -105,7 +121,8 @@ export default function ProductManager({ initial, t }: { initial: DashProduct[];
       }
     }
     setBusy(false);
-    say(bad ? t.badImage : "");
+    if (trimmed) setShowMore(true);
+    say(bad ? t.badImage : trimmed ? fill(t.limitTrimmed, { n: list.length, max: MAX_PRODUCTS }) : "");
   }
 
   async function save(id: string, key: keyof DashProduct, value: string) {
@@ -180,22 +197,30 @@ export default function ProductManager({ initial, t }: { initial: DashProduct[];
             </div>
           </div>
         </div>
-        <button type="button" className={btn} onClick={add} disabled={busy}>
-          {busy ? t.adding : t.add}
-        </button>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <button type="button" className={btn} onClick={add} disabled={busy || atLimit}>
+            {busy ? t.adding : t.add}
+          </button>
+          <span className="text-sm font-semibold text-muted">{fill(t.usage, { n: items.length, max: MAX_PRODUCTS })}</span>
+          <button type="button" className="text-sm font-bold text-brand hover:underline" onClick={() => setShowMore((v) => !v)} aria-expanded={showMore || atLimit}>
+            {t.moreOpen}
+          </button>
+        </div>
 
         <div className="flex flex-col items-start gap-2 rounded-xl bg-paper p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-sm font-bold">{t.bulkTitle}</div>
             <div className="text-[13px] text-muted">{t.bulkText}</div>
           </div>
-          <button type="button" className={`${btnGhost} ${btnSmall} flex-none`} onClick={() => bulkRef.current?.click()} disabled={busy}>
+          <button type="button" className={`${btnGhost} ${btnSmall} flex-none`} onClick={() => bulkRef.current?.click()} disabled={busy || atLimit}>
             {t.bulk}
           </button>
           <input ref={bulkRef} type="file" accept="image/*" multiple hidden onChange={(e) => { bulk(e.target.files); e.target.value = ""; }} />
         </div>
         <p role="status" className="min-h-5 text-sm font-semibold text-brand">{msg}</p>
       </section>
+
+      {(showMore || atLimit) && <MoreForm t={t} email={email} />}
 
       <datalist id="categories">{categories.map((c) => <option key={c} value={c} />)}</datalist>
       <input ref={replaceRef} type="file" accept="image/*" hidden onChange={(e) => { replace(e.target.files?.[0]); e.target.value = ""; }} />
@@ -238,6 +263,43 @@ export default function ProductManager({ initial, t }: { initial: DashProduct[];
         )}
       </section>
     </div>
+  );
+}
+
+/** "I want more than the limit": sellers leave their email and how many products they need. */
+function MoreForm({ t, email }: { t: T; email: string }) {
+  const [state, action, pending] = useActionState<FormState, FormData>(requestMoreProducts, {});
+  return (
+    <section className={`${card} space-y-4`} aria-labelledby="more-title">
+      <div>
+        <h2 id="more-title" className="text-lg font-bold">{fill(t.moreTitle, { max: MAX_PRODUCTS })}</h2>
+        <p className="mt-1 text-[14.5px] text-muted">{t.moreText}</p>
+      </div>
+      {state.ok ? (
+        <p role="status" className="rounded-xl bg-paper p-4 text-[15px] font-bold text-ok">{t.moreThanks}</p>
+      ) : (
+        <form action={action} className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={label} htmlFor="m-email">{t.moreEmail}</label>
+            <input id="m-email" name="email" type="email" required defaultValue={email} className={input} maxLength={200} />
+          </div>
+          <div>
+            <label className={label} htmlFor="m-wanted">{t.moreHowMany}</label>
+            <select id="m-wanted" name="wanted" className={input} defaultValue={MORE_OPTIONS[0]}>
+              {MORE_OPTIONS.map((o) => <option key={o}>{o}</option>)}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className={label} htmlFor="m-note">{t.moreNote}</label>
+            <textarea id="m-note" name="note" rows={3} maxLength={1000} className={input} />
+          </div>
+          <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+            <button type="submit" className={btn} disabled={pending}>{pending ? t.moreSending : t.moreSend}</button>
+            {state.error && <p role="alert" className="text-sm font-semibold text-red-700">{state.error}</p>}
+          </div>
+        </form>
+      )}
+    </section>
   );
 }
 

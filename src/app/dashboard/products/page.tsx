@@ -5,7 +5,7 @@ import { toDash } from "@/lib/products";
 import ProductManager from "./ProductManager";
 
 export default async function ProductsPage() {
-  const { shop } = await requireUser();
+  const { user, shop } = await requireUser();
   const { t } = await getDict();
   const products = await db.product.findMany({ where: { shopId: shop.id }, orderBy: [{ createdAt: "desc" }, { id: "desc" }] });
 
@@ -15,7 +15,7 @@ export default async function ProductsPage() {
         <h1 className="text-2xl font-bold tracking-tight">{t.dash.products.title}</h1>
         <p className="mt-1 text-[15px] text-muted">{t.dash.products.sub}</p>
       </div>
-      <ProductManager initial={products.map(toDash)} t={t.dash.products} />
+      <ProductManager initial={products.map(toDash)} t={t.dash.products} email={user.email} />
     </div>
   );
 }
