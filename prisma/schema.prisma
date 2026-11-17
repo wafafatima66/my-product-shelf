@@ -1,14 +1,15 @@
-// SQLite for local development. To move to Supabase (Postgres), change the
-// provider to "postgresql", point DATABASE_URL at the Supabase connection
-// string and run `prisma migrate deploy`.
+// PostgreSQL (Neon). DATABASE_URL is the pooled connection used by the app;
+// DIRECT_URL is the direct connection Prisma uses to run migrations.
+// For a plain local Postgres, set both to the same address.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

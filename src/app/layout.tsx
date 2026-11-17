@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_Bengali } from "next/font/google";
+import Analytics from "@/components/Analytics";
 import { getLocale } from "@/lib/i18n";
 import { caveat, zen } from "@/lib/siteFonts";
 import { inter } from "@/templates/fonts";
@@ -20,7 +21,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
   return (
     <html lang={locale} className={`${inter.variable} ${bengali.variable} ${zen.variable} ${caveat.variable}`}>
-      <body className="min-h-screen">{children}</body>
+      <body className="min-h-screen">
+        {children}
+        <Analytics id={process.env.NEXT_PUBLIC_GA_ID} />
+      </body>
     </html>
   );
 }

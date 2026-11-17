@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { track } from "@/lib/analytics";
 import { formatPrice } from "@/lib/format";
 import { fill } from "@/lib/i18n/fill";
 import type { GalleryProduct, GalleryShop } from "@/lib/gallery";
@@ -138,6 +139,8 @@ export function ShareDialog({
   // A message from the customer to the shop owner: "I want this!" plus the product.
   const askText = `${t.wantLine}\n${[title, price].filter(Boolean).join(" - ")}\n${url}`;
   const hasContact = !!(shop.whatsapp || shop.messenger || shop.instagram);
+  // Which products get shared, and where: shows up in Google Analytics as a "share" event.
+  const sent = (method: string) => track("share", { method, item_id: p.id, shop: shop.slug });
 
   const say = (m: string) => {
     setToast(m);
@@ -153,6 +156,7 @@ export function ShareDialog({
   };
 
   async function more() {
+    sent("more_apps");
     const data: ShareData = { title: title || shop.name, text, url };
     try {
       // Prefer the designed card so the picture itself carries the name and price.
@@ -219,6 +223,7 @@ export function ShareDialog({
                 href={`https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(askText)}`}
                 target="_blank"
                 rel="noopener"
+                onClick={() => sent("ask_whatsapp")}
               >
                 <WhatsAppIcon className="h-[18px] w-[18px]" /> {t.askWhatsApp}
               </a>
@@ -229,7 +234,10 @@ export function ShareDialog({
                 href={`https://m.me/${shop.messenger}`}
                 target="_blank"
                 rel="noopener"
-                onClick={() => copy(askText, t.askCopied)}
+                onClick={() => {
+                  sent("ask_messenger");
+                  copy(askText, t.askCopied);
+                }}
               >
                 <MessengerIcon className="h-[18px] w-[18px]" /> {t.askMessenger}
               </a>
@@ -240,7 +248,10 @@ export function ShareDialog({
                 href={`https://ig.me/m/${shop.instagram}`}
                 target="_blank"
                 rel="noopener"
-                onClick={() => copy(askText, t.askCopied)}
+                onClick={() => {
+                  sent("ask_instagram");
+                  copy(askText, t.askCopied);
+                }}
               >
                 <InstagramIcon className="h-[18px] w-[18px]" /> {t.askInstagram}
               </a>
@@ -254,6 +265,7 @@ export function ShareDialog({
           href={`https://wa.me/?text=${encodeURIComponent(text)}`}
           target="_blank"
           rel="noopener"
+          onClick={() => sent("whatsapp")}
         >
           <WhatsAppIcon className="h-[18px] w-[18px]" /> {t.whatsapp}
         </a>
@@ -263,12 +275,16 @@ export function ShareDialog({
           target={mobile ? undefined : "_blank"}
           rel="noopener"
           onClick={() => {
+            sent("messenger");
             if (!mobile) copy(text, t.messengerCopied);
           }}
         >
           <MessengerIcon className="h-[18px] w-[18px]" /> {t.messenger}
         </a>
-        <button type="button" className={`${btn} bg-[var(--t-card)] ring-1 ring-[var(--t-line)]`} onClick={() => copy(url, t.copied)}>
+        <button type="button" className={`${btn} bg-[var(--t-card)] ring-1 ring-[var(--t-line)]`} onClick={() => {
+          sent("copy_link");
+          copy(url, t.copied);
+        }}>
           <CopyIcon className="h-[18px] w-[18px]" /> {t.copyLink}
         </button>
         {cardUrl && (
@@ -276,6 +292,7 @@ export function ShareDialog({
             className={`${btn} bg-[var(--t-card)] ring-1 ring-[var(--t-line)]`}
             href={`${cardUrl}?f=story`}
             download={`${p.code || p.name || "product"}.png`}
+            onClick={() => sent("save_card")}
           >
             <ImageIcon className="h-[18px] w-[18px]" /> {t.saveCard}
           </a>

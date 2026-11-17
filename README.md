@@ -10,15 +10,29 @@ English and Bangla throughout.
 
 ## Run it
 
+You need a PostgreSQL database. A free Neon project works for local work too.
+
 ```bash
 npm install
-npx prisma db push      # creates prisma/dev.db and the Prisma client
+cp .env.example .env    # then fill in DATABASE_URL and DIRECT_URL
+npx prisma migrate deploy
 npm run dev             # http://localhost:3000
 ```
 
-`.env` holds `DATABASE_URL` (SQLite for now) and `SITE_URL` (used for share previews).
-In production set `SITE_URL=https://myproductshelf.com`.
-Uploaded photos are written to `./uploads` and served from `/media/<key>`.
+`.env` settings are described in `.env.example`. Without `BLOB_READ_WRITE_TOKEN`, photos are
+written to `./uploads` and served from `/media/<key>`.
+
+## Deploy on Vercel
+
+1. Push to GitHub and import the repo in Vercel (it runs `npm run vercel-build`, which applies
+   the database migrations and builds).
+2. In the Vercel project, add a **Neon** database (Storage tab) or paste `DATABASE_URL` and
+   `DIRECT_URL`, and create a **Blob** store, which adds `BLOB_READ_WRITE_TOKEN`.
+3. Add `SITE_URL=https://myproductshelf.com` and `NEXT_PUBLIC_GA_ID` (Google Analytics).
+4. Add the domain under Settings, Domains, and point the Namecheap DNS records at Vercel.
+
+Photos in Blob are stored as `photos/<id>.jpg` (full size) and `photos/<id>-t.jpg` (thumbnail),
+and a product keeps the full public address.
 
 ## Where things are
 
@@ -34,7 +48,7 @@ Uploaded photos are written to `./uploads` and served from `/media/<key>`.
 | `src/lib/i18n` | English and Bangla text (`en.ts`, `bn.ts`) |
 | `src/lib/card.tsx` | The share card picture used for link previews and "Save card as picture". Bangla text is drawn with `sharp` because Satori cannot join Bangla letters. Fonts are in `src/assets/fonts` |
 | `src/app/[slug]/p/[id]/card` | Serves a product's card (`?f=story` for the tall version) |
-| `src/lib/storage.ts` | Photo storage. The only file that changes when moving to Supabase Storage |
+| `src/lib/storage.ts` | Photo storage. Photo storage: Vercel Blob when a token is set, local disk otherwise |
 | `src/templates` | Templates, shared dialogs and the registry |
 
 ## Add a template
@@ -45,12 +59,3 @@ Uploaded photos are written to `./uploads` and served from `/media/<key>`.
 2. Add one entry to `TEMPLATES` in `src/templates/registry.ts`.
 
 The template picker, preview, home page demos and public pages pick it up automatically.
-
-## Moving to Supabase later
-
-1. In `prisma/schema.prisma` change the provider to `postgresql` and set `DATABASE_URL` to the
-   Supabase connection string, then run `npx prisma migrate dev`.
-2. Replace the file functions in `src/lib/storage.ts` with Supabase Storage uploads and make
-   `mediaUrl` (`src/lib/media.ts`) return the bucket URL.
-3. Accounts currently use email and password with hashed passwords and database sessions
-   (`src/lib/auth.ts`). They can stay, or be swapped for Supabase Auth.
