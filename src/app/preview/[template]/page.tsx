@@ -39,7 +39,7 @@ export default async function PreviewPage({ params, searchParams }: Props) {
     <>
       {!embed && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-ink px-4 py-2.5 text-[13px] text-white">
-          <Link href="/dashboard/template" className="font-semibold underline-offset-2 hover:underline">← {t.dash.previewBar.back}</Link>
+          <Link href="/dashboard" className="font-semibold underline-offset-2 hover:underline">← {t.dash.previewBar.back}</Link>
           <span className="rounded bg-brand px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider">{t.dash.previewBar.label}</span>
           <span className="hidden text-white/70 md:inline">{sample ? t.dash.previewBar.empty : t.dash.previewBar.hint}</span>
           <div className="ml-auto flex flex-wrap items-center gap-1.5">

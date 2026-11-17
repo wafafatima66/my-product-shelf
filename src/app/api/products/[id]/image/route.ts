@@ -15,8 +15,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   let image;
   try {
     image = await saveImage(Buffer.from(await file.arrayBuffer()));
-  } catch {
-    return Response.json({ error: "bad_image" }, { status: 400 });
+  } catch (e) {
+    if (e instanceof Error && e.message === "bad_image") return Response.json({ error: "bad_image" }, { status: 400 });
+    console.error("photo upload failed (storage)", e);
+    return Response.json({ error: "storage" }, { status: 500 });
   }
 
   const updated = await db.product.update({

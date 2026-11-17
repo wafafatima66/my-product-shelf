@@ -18,7 +18,6 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const data: Record<string, unknown> = {};
   if ("name" in body) data.name = clip(body.name, 120);
   if ("code" in body) data.code = clip(body.code, 40);
-  if ("category" in body) data.category = clip(body.category, 40);
   if ("price" in body) data.price = parsePrice(body.price);
 
   const updated = await db.product.update({ where: { id: product.id }, data });

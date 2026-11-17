@@ -128,7 +128,7 @@ export const homeEn = {
     "If you sell what you make or choose, and customers find you on Instagram, Facebook, at craft fairs or by text, My Product Shelf gives your products one tidy home.",
   who: [
     { title: "Handmade jewelry", text: "Rings, necklaces and earrings with a code and price, so when a customer asks for R105 you send the right photo at once." },
-    { title: "Boutiques and clothing", text: "Dresses, tees and accessories grouped by category, so customers browse instead of scrolling your whole page." },
+    { title: "Boutiques and clothing", text: "Dresses, tees and accessories side by side, so customers browse instead of scrolling your whole page." },
     { title: "Home bakers and cake makers", text: "Show your cakes, cookies and gift boxes in one gallery and send the exact cake a customer is asking about." },
     { title: "Crafts and DIY", text: "Knitted, painted, embroidered or sewn: every piece in one place, each with its own link." },
     { title: "Craft fair and market vendors", text: "Put a QR code on your table. Shoppers browse your full range and share favorites, even the items you didn't bring." },
@@ -145,7 +145,7 @@ export const homeEn = {
     { title: "Unlimited products", text: "Add as many as you like, one by one or many photos at once." },
     { title: "Photo, name, code and price", text: "All optional. Add what you have and skip the rest." },
     { title: "Search by name or code", text: "You and your customers find any product in seconds." },
-    { title: "Categories when you need them", text: "Group products into tabs. No categories means no tabs." },
+    { title: "Live preview as you type", text: "Set up your gallery on one page and watch it appear in your chosen template." },
     { title: "Share cards", text: "Designed cards for WhatsApp, Messenger and Instagram, and a picture to save for stories." },
     { title: "A link for every product", text: "Each product opens on its own, so people see exactly what you sent." },
     { title: "Seven templates", text: "Elegant, playful, bold or warm. Switch any time and your products stay put." },
@@ -159,7 +159,7 @@ export const homeEn = {
   compareText: "My Product Shelf doesn't replace Facebook or Instagram. It works alongside them.",
   compares: [
     { title: "vs. Facebook and Instagram posts", text: "Posts sink down the feed and have no order. A gallery keeps every product in one place with its price and code. You keep posting to bring people in." },
-    { title: "vs. a link-in-bio page", text: "A link-in-bio tool holds a handful of links. My Product Shelf holds your whole range, with search, categories and a share card for every item." },
+    { title: "vs. a link-in-bio page", text: "A link-in-bio tool holds a handful of links. My Product Shelf holds your whole range, with search and a share card for every item." },
     { title: "vs. an online store", text: "A store builder adds a cart, payments and delivery settings you may not need. If you take orders in chat, a gallery is lighter and quicker to set up." },
   ],
 
@@ -167,7 +167,7 @@ export const homeEn = {
   guidesSub: "Quick guides",
   guidesTitle: "Simple ways to sell more from your phone.",
   guides: [
-    { title: "How to make an online product catalog", text: "Gather your best photos, give each product a short name and a code, add the price, and group products by category once you have more than a few. A catalog works best when every product has the same three things: a clear photo, a name and a price. My Product Shelf turns that into one page you can share with a single link." },
+    { title: "How to make an online product catalog", text: "Gather your best photos, give each product a short name and a code, add the price. A catalog works best when every product has the same three things: a clear photo, a name and a price. My Product Shelf turns that into one page you can share with a single link." },
     { title: "How to share product photos on WhatsApp without screenshots", text: "A screenshot loses the price and the name. Send a product card instead. It carries the photo, name, price, code and a link to the product, and it looks the same in WhatsApp, Messenger and Instagram." },
     { title: "How to keep your Facebook and Instagram products organized", text: "Posts and stories are for attention, not for storage. Keep a gallery as your single list of products, then put its link in your bio so followers can browse everything and share what they like." },
     { title: "How to answer “is this available?” faster", text: "Give every product a short code such as R105 and put it in the caption. When a customer sends the code, search it in your gallery and share the card in seconds." },
@@ -187,7 +187,7 @@ export const homeEn = {
   faqTitle: "Questions you might have",
   faqs: [
     { q: "What is an online product catalog?", a: "A page that shows your products in an organized way, with a photo, name, price and code. Unlike an online store it has no checkout. Customers look, share and then message you." },
-    { q: "Is My Product Shelf an alternative to a link-in-bio page?", a: "It does the same job of giving you one link to share, but it holds your whole product range, with search, categories and a share card for every product." },
+    { q: "Is My Product Shelf an alternative to a link-in-bio page?", a: "It does the same job of giving you one link to share, but it holds your whole product range, with search and a share card for every product." },
     { q: "Is it good for Etsy sellers and craft fair vendors?", a: "Yes. Etsy sellers can keep a clean gallery they control and share it on Instagram or by text. At craft fairs and markets, a QR code on your table lets shoppers browse your full range, including items you didn't bring." },
     { q: "Can people find my gallery on Google?", a: "Your gallery is a normal public web page with its own address, so search engines are able to list it. A clear shop name and description help." },
     { q: "Does it work on my phone?", a: "Yes. You can sign up, add products and share from your phone, and your customers see a gallery made for phone screens." },
@@ -196,7 +196,7 @@ export const homeEn = {
     { q: "Do my friends or customers need an account?", a: "No. They just open the link." },
     { q: "Can customers order or pay on My Product Shelf?", a: "No. It is a gallery, not a shop. Customers share a product or message you about it, and you take the order in chat like you do today." },
     { q: "Do I need a website or any technical skills?", a: "No. Create an account, add your photos and pick a template. You can do everything from your phone." },
-    { q: "How many products can I add, and what do I enter?", a: "As many as you like. Nothing is compulsory: a photo, name, code, price and category are all optional." },
+    { q: "How many products can I add, and what do I enter?", a: "As many as you like. Nothing is compulsory: a photo, name, code and price are all optional." },
   ],
 
   ctaTitle: "Ready to get your products shared?",

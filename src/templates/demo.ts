@@ -7,7 +7,7 @@ const photo = (file: string) =>
 const item = (
   id: string, name: string, code: string, price: number, category: string,
   file: string, width: number, height: number,
-): GalleryProduct => ({ id, name, code, price, category, image: photo(file), thumb: photo(file), width, height });
+): GalleryProduct => ({ id, name, code, price, category: "", image: photo(file), thumb: photo(file), width, height });
 
 export const DEMO: GalleryData = {
   shop: {

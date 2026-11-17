@@ -83,7 +83,9 @@ export async function saveBusiness(_: FormState, fd: FormData): Promise<FormStat
       return { error: t.dash.business.errAddress };
     }
     slug = wanted;
-  } else if (!shop.name && name && !shop.slugCustom) {
+  } else if (name && !shop.slugCustom && (await db.product.count({ where: { shopId: shop.id } })) === 0) {
+    // The address follows the business name while nothing has been shared yet. Once there
+    // are products (so links may be out there) or the seller picks their own, it stays put.
     const auto = slugify(name);
     if (auto) slug = await uniqueSlug(auto, shop.id);
   }

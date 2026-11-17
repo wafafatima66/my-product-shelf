@@ -42,8 +42,8 @@ model Shop {
   facebook    String    @default("")
   whatsapp    String    @default("")
   messenger   String    @default("")
-  template    String    @default("elegant")
-  currency    String    @default("BDT")
+  template    String    @default("fresh")
+  currency    String    @default("USD")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -73,7 +73,6 @@ model Product {
   name      String   @default("")
   code      String   @default("")
   price     Float?
-  category  String   @default("")
   createdAt DateTime @default(now())
   shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
 

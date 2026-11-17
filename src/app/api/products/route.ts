@@ -18,8 +18,10 @@ export async function POST(req: Request) {
     if (file.size > MAX_UPLOAD) return Response.json({ error: "too_big" }, { status: 413 });
     try {
       image = await saveImage(Buffer.from(await file.arrayBuffer()));
-    } catch {
-      return Response.json({ error: "bad_image" }, { status: 400 });
+    } catch (e) {
+      if (e instanceof Error && e.message === "bad_image") return Response.json({ error: "bad_image" }, { status: 400 });
+      console.error("photo upload failed (storage)", e);
+      return Response.json({ error: "storage" }, { status: 500 });
     }
   }
 
@@ -32,7 +34,6 @@ export async function POST(req: Request) {
       name: clip(fd.get("name"), 120),
       code: clip(fd.get("code"), 40),
       price: parsePrice(fd.get("price")),
-      category: clip(fd.get("category"), 40),
     },
   });
   return Response.json(toDash(product));

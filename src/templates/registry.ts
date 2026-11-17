@@ -72,6 +72,6 @@ export const TEMPLATES: TemplateInfo[] = [
   },
 ];
 
-export const DEFAULT_TEMPLATE = "elegant";
+export const DEFAULT_TEMPLATE = "fresh";
 export const getTemplate = (id: string) => TEMPLATES.find((t) => t.id === id) ?? TEMPLATES[0];
 export const isTemplate = (id: string) => TEMPLATES.some((t) => t.id === id);

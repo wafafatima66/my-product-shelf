@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { requestMoreProducts, type FormState } from "@/app/actions";
 import { btn, btnGhost, btnSmall, card, input, label } from "@/components/ui";
 import { MAX_PRODUCTS, MORE_OPTIONS } from "@/lib/limits";
@@ -9,6 +9,7 @@ import type { Dict } from "@/lib/i18n/en";
 import type { DashProduct } from "@/lib/products";
 
 type T = Dict["dash"]["products"];
+type Editable = "name" | "code" | "price";
 
 /** Shrink a phone photo before upload so it is quick on mobile data. */
 async function shrink(file: File, max = 1600): Promise<Blob> {
@@ -34,28 +35,43 @@ async function send(url: string, method: string, body: FormData | string, json =
   return res.json();
 }
 
-export default function ProductManager({ initial, t, email }: { initial: DashProduct[]; t: T; email: string }) {
-  const [items, setItems] = useState(initial);
+/**
+ * Add, edit and delete products. The list lives in the editor so the live preview
+ * sees every keystroke; changes are saved to the server when a box loses focus.
+ */
+export default function ProductsPanel({
+  items,
+  setItems,
+  t,
+  email,
+}: {
+  items: DashProduct[];
+  setItems: Dispatch<SetStateAction<DashProduct[]>>;
+  t: T;
+  email: string;
+}) {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  const [query, setQuery] = useState("");
   const [showMore, setShowMore] = useState(false);
   const atLimit = items.length >= MAX_PRODUCTS;
 
   // add form
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [photoUrl, setPhotoUrl] = useState("");
-  const [f, setF] = useState({ name: "", code: "", price: "", category: "" });
+  const [f, setF] = useState({ name: "", code: "", price: "" });
   const fileRef = useRef<HTMLInputElement>(null);
   const bulkRef = useRef<HTMLInputElement>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
   const [replaceId, setReplaceId] = useState<string | null>(null);
 
-  const categories = useMemo(() => [...new Set(items.map((i) => i.category).filter(Boolean))], [items]);
-  const shown = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return q ? items.filter((i) => [i.name, i.code, i.category].some((v) => v.toLowerCase().includes(q))) : items;
-  }, [items, query]);
+  // What the server last saw for each product, so a box only saves when it really changed.
+  const saved = useRef<Record<string, Record<Editable, string>>>(
+    Object.fromEntries(items.map((i) => [i.id, { name: i.name, code: i.code, price: i.price }])),
+  );
+  const latest = useRef(items);
+  useEffect(() => {
+    latest.current = items;
+  }, [items]);
 
   const say = (m: string) => {
     setMsg(m);
@@ -68,6 +84,9 @@ export default function ProductManager({ initial, t, email }: { initial: DashPro
       return say(fill(t.limitReached, { max: MAX_PRODUCTS }));
     }
     say(code === "bad_image" ? t.badImage : t.failed);
+  };
+  const remember = (p: DashProduct) => {
+    saved.current[p.id] = { name: p.name, code: p.code, price: p.price };
   };
 
   async function pickPhoto(file?: File) {
@@ -82,15 +101,16 @@ export default function ProductManager({ initial, t, email }: { initial: DashPro
 
   async function add() {
     if (atLimit) return fail(new Error("limit"));
-    if (!photo && !f.name.trim() && !f.code.trim() && !f.price.trim() && !f.category.trim()) return say(t.needOne);
+    if (!photo && !f.name.trim() && !f.code.trim() && !f.price.trim()) return say(t.needOne);
     setBusy(true);
     try {
       const fd = new FormData();
       if (photo) fd.append("image", photo, "photo.jpg");
       for (const [k, v] of Object.entries(f)) fd.append(k, v);
       const created: DashProduct = await send("/api/products", "POST", fd);
+      remember(created);
       setItems((x) => [created, ...x]);
-      setF({ name: "", code: "", price: "", category: f.category }); // keep the category: sellers add many in a row
+      setF({ name: "", code: "", price: "" });
       setPhoto(null);
       setPhotoUrl("");
     } catch (e) {
@@ -115,6 +135,7 @@ export default function ProductManager({ initial, t, email }: { initial: DashPro
         const fd = new FormData();
         fd.append("image", await shrink(list[i]), "photo.jpg");
         const created: DashProduct = await send("/api/products", "POST", fd);
+        remember(created);
         setItems((x) => [created, ...x]);
       } catch {
         bad++;
@@ -125,12 +146,17 @@ export default function ProductManager({ initial, t, email }: { initial: DashPro
     say(bad ? t.badImage : trimmed ? fill(t.limitTrimmed, { n: list.length, max: MAX_PRODUCTS }) : "");
   }
 
-  async function save(id: string, key: keyof DashProduct, value: string) {
-    const current = items.find((i) => i.id === id);
-    if (!current || current[key] === value) return;
+  const edit = (id: string, key: Editable, value: string) =>
     setItems((x) => x.map((i) => (i.id === id ? { ...i, [key]: value } : i)));
+
+  async function commit(id: string, key: Editable) {
+    const cur = latest.current.find((i) => i.id === id);
+    if (!cur) return;
+    const value = cur[key].trim();
+    if (saved.current[id]?.[key] === value) return;
     try {
       await send(`/api/products/${id}`, "PATCH", JSON.stringify({ [key]: value }), true);
+      saved.current[id] = { ...saved.current[id], [key]: value };
     } catch (e) {
       fail(e);
     }
@@ -153,7 +179,7 @@ export default function ProductManager({ initial, t, email }: { initial: DashPro
       const fd = new FormData();
       fd.append("image", await shrink(file), "photo.jpg");
       const updated: DashProduct = await send(`/api/products/${id}/image`, "POST", fd);
-      setItems((x) => x.map((i) => (i.id === id ? { ...i, thumb: updated.thumb } : i)));
+      setItems((x) => x.map((i) => (i.id === id ? { ...i, thumb: updated.thumb, image: updated.image, width: updated.width, height: updated.height } : i)));
     } catch (e) {
       fail(e);
     }
@@ -164,21 +190,25 @@ export default function ProductManager({ initial, t, email }: { initial: DashPro
   return (
     <div className="space-y-5">
       <section className={`${card} space-y-4`}>
-        <h2 className="text-lg font-bold">{t.addTitle}</h2>
-        <div className="grid gap-5 sm:grid-cols-[160px_1fr]">
+        <div>
+          <h2 className="text-lg font-bold">{t.title}</h2>
+          <p className="mt-0.5 text-[14px] text-muted">{t.sub}</p>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-[130px_1fr]">
           <div>
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="grid aspect-square w-full max-w-[160px] place-items-center overflow-hidden rounded-xl border-2 border-dashed border-line bg-paper bg-cover bg-center text-sm font-semibold text-muted transition hover:border-brand"
+              className="grid aspect-square w-full max-w-[130px] place-items-center overflow-hidden rounded-xl border-2 border-dashed border-line bg-paper bg-cover bg-center text-sm font-semibold text-muted transition hover:border-brand"
               style={photoUrl ? { backgroundImage: `url(${photoUrl})`, borderStyle: "solid" } : undefined}
             >
               {photoUrl ? "" : t.addPhoto}
             </button>
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { pickPhoto(e.target.files?.[0]); e.target.value = ""; }} />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
               <label className={label} htmlFor="p-name">{t.name}</label>
               <input id="p-name" className={input} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} maxLength={120} />
             </div>
@@ -190,13 +220,9 @@ export default function ProductManager({ initial, t, email }: { initial: DashPro
               <label className={label} htmlFor="p-price">{t.price}</label>
               <input id="p-price" className={input} type="number" min="0" step="any" inputMode="decimal" value={f.price} onChange={(e) => setF({ ...f, price: e.target.value })} />
             </div>
-            <div>
-              <label className={label} htmlFor="p-cat">{t.category}</label>
-              <input id="p-cat" className={input} list="categories" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} maxLength={40} />
-              <p className="mt-1 text-xs text-muted">{t.categoryHint}</p>
-            </div>
           </div>
         </div>
+
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <button type="button" className={btn} onClick={add} disabled={busy || atLimit}>
             {busy ? t.adding : t.add}
@@ -222,22 +248,15 @@ export default function ProductManager({ initial, t, email }: { initial: DashPro
 
       {(showMore || atLimit) && <MoreForm t={t} email={email} />}
 
-      <datalist id="categories">{categories.map((c) => <option key={c} value={c} />)}</datalist>
       <input ref={replaceRef} type="file" accept="image/*" hidden onChange={(e) => { replace(e.target.files?.[0]); e.target.value = ""; }} />
 
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="text-sm font-semibold text-muted">{items.length ? count : ""}</div>
-          {items.length > 6 && (
-            <input className={`${input} !w-full sm:!w-64`} type="search" placeholder={t.search} value={query} onChange={(e) => setQuery(e.target.value)} />
-          )}
-        </div>
-
+        {items.length > 0 && <div className="text-sm font-semibold text-muted">{count}</div>}
         {items.length === 0 ? (
-          <div className={`${card} py-10 text-center text-[15px] text-muted`}>{t.empty}</div>
+          <div className={`${card} py-8 text-center text-[15px] text-muted`}>{t.empty}</div>
         ) : (
-          <ul className="grid gap-3 md:grid-cols-2">
-            {shown.map((p) => (
+          <ul className="grid gap-3">
+            {items.map((p) => (
               <li key={p.id} className="flex gap-3 rounded-2xl border border-line bg-white p-3">
                 <button
                   type="button"
@@ -249,10 +268,9 @@ export default function ProductManager({ initial, t, email }: { initial: DashPro
                   {p.thumb ? "" : t.noPhoto}
                 </button>
                 <div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
-                  <Field wide ph={t.name} value={p.name} onSave={(v) => save(p.id, "name", v)} />
-                  <Field ph={t.code} value={p.code} onSave={(v) => save(p.id, "code", v)} />
-                  <Field ph={t.price} value={p.price} type="number" onSave={(v) => save(p.id, "price", v)} />
-                  <Field wide ph={t.category} value={p.category} list="categories" onSave={(v) => save(p.id, "category", v)} />
+                  <Field wide ph={t.name} value={p.name} onChange={(v) => edit(p.id, "name", v)} onCommit={() => commit(p.id, "name")} />
+                  <Field ph={t.code} value={p.code} onChange={(v) => edit(p.id, "code", v)} onCommit={() => commit(p.id, "code")} />
+                  <Field ph={t.price} value={p.price} type="number" onChange={(v) => edit(p.id, "price", v)} onCommit={() => commit(p.id, "price")} />
                   <button type="button" onClick={() => remove(p.id)} className="col-span-2 justify-self-end text-[13px] font-semibold text-red-700 hover:underline">
                     {t.remove}
                   </button>
@@ -303,22 +321,20 @@ function MoreForm({ t, email }: { t: T; email: string }) {
   );
 }
 
-/** A text box that saves when the seller leaves it. */
-function Field({ value, onSave, ph, type = "text", wide, list }: {
-  value: string; onSave: (v: string) => void; ph: string; type?: string; wide?: boolean; list?: string;
+/** A text box that updates the preview as you type and saves when you leave it. */
+function Field({ value, onChange, onCommit, ph, type = "text", wide }: {
+  value: string; onChange: (v: string) => void; onCommit: () => void; ph: string; type?: string; wide?: boolean;
 }) {
-  const [v, setV] = useState(value);
   return (
     <input
       aria-label={ph}
       placeholder={ph}
       type={type}
-      list={list}
       min={type === "number" ? 0 : undefined}
       step={type === "number" ? "any" : undefined}
-      value={v}
-      onChange={(e) => setV(e.target.value)}
-      onBlur={() => onSave(v.trim())}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={onCommit}
       className={`${input} !px-3 !py-2 !text-[14px] ${wide ? "col-span-2" : ""}`}
     />
   );

@@ -26,17 +26,25 @@ const thumbOf = (url: string) => url.replace(/\.jpg$/, "-t.jpg");
 
 export async function saveImage(input: Buffer) {
   const id = randomBytes(10).toString("hex");
-  const base = sharp(input, { failOn: "none" }).rotate();
-  const full = await base
-    .clone()
-    .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
-    .jpeg({ quality: 82, mozjpeg: true })
-    .toBuffer({ resolveWithObject: true });
-  const thumb = await base
-    .clone()
-    .resize({ width: 560, height: 560, fit: "inside", withoutEnlargement: true })
-    .jpeg({ quality: 76, mozjpeg: true })
-    .toBuffer();
+  let full: { data: Buffer; info: { width: number; height: number } };
+  let thumb: Buffer;
+  try {
+    const base = sharp(input, { failOn: "none" }).rotate();
+    full = await base
+      .clone()
+      .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 82, mozjpeg: true })
+      .toBuffer({ resolveWithObject: true });
+    thumb = await base
+      .clone()
+      .resize({ width: 560, height: 560, fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 76, mozjpeg: true })
+      .toBuffer();
+  } catch (e) {
+    // The file is not a picture we can read. Anything thrown after this point is a storage problem.
+    console.error("photo could not be processed", e);
+    throw new Error("bad_image");
+  }
 
   if (blobEnabled()) {
     const opts = { access: "public", contentType: "image/jpeg", addRandomSuffix: false, cacheControlMaxAge: 31536000 } as const;

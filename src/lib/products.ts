@@ -3,14 +3,16 @@ import type { Product } from "@prisma/client";
 import { getUser } from "@/lib/auth";
 import { mediaUrl } from "@/lib/media";
 
-/** What the dashboard needs for one product row. */
+/** What the dashboard needs for one product row (and for the live preview). */
 export type DashProduct = {
   id: string;
   name: string;
   code: string;
   price: string; // kept as text so the field can be blank
-  category: string;
   thumb: string;
+  image: string;
+  width: number;
+  height: number;
 };
 
 export const toDash = (p: Product): DashProduct => ({
@@ -18,8 +20,10 @@ export const toDash = (p: Product): DashProduct => ({
   name: p.name,
   code: p.code,
   price: p.price == null ? "" : String(p.price),
-  category: p.category,
   thumb: mediaUrl(p.image, true),
+  image: mediaUrl(p.image),
+  width: p.width,
+  height: p.height,
 });
 
 export function parsePrice(v: unknown): number | null {

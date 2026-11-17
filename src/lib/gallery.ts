@@ -45,7 +45,7 @@ export function toGallery(shop: Shop, products: Product[]): GalleryData {
       name: p.name,
       code: p.code,
       price: p.price,
-      category: p.category,
+      category: "", // products no longer have categories; templates only show category tabs when some exist
       image: mediaUrl(p.image),
       thumb: mediaUrl(p.image, true),
       width: p.width,
